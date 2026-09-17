@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0c0906">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>A Verdadeira Solitude de Isaquinho</title>
+<style>
+  :root{
+    --paper: #f4ecd8;
+    --paper-shadow: #e4d6b2;
+    --ink: #3a2c1a;
+    --ink-soft: #5b4a33;
+    --leaf: #4b5e3a;
+    --leaf-dark: #37452a;
+    --tangerine: #c96a2e;
+    --tangerine-deep: #a8501c;
+    --gold: #b98a3e;
+    --wood-1: #2b2015;
+    --wood-2: #1b140d;
+
+    /* Paleta exclusiva da capa: verde-tangerina mais escuro e contrastado */
+    --cover-bg-1: #1c2814;
+    --cover-bg-2: #0a0f06;
+    --cover-border: rgba(224, 168, 74, 0.55);
+    --cover-title: #fbeed0;
+    --cover-sub: #e0a84a;
+    --cover-tangerine: #e07a34;
+    --cover-leaf-motif: #6c8a55;
+  }
+  :root:not([data-theme="light"]){
+    /* default follows system, redefined below */
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --wood-1: #17110b;
+      --wood-2: #0c0906;
+    }
+  }
+  :root[data-theme="dark"]{
+    --wood-1: #17110b;
+    --wood-2: #0c0906;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{
+    margin:0; padding:0;
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    background: radial-gradient(ellipse at 50% 20%, var(--wood-1), var(--wood-2));
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: Garamond, Georgia, 'Times New Roman', serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  body{
+    position: fixed;
+    inset: 0;
+  }
+  #stage{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    touch-action: pan-y;
+  }
+
+  /* Ambient wood grain + vignette */
+  #stage::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(100deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px),
+      radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.55), transparent 60%);
+    pointer-events:none;
+  }
+
+  header.top-bar{
+    position:absolute;
+    top: max(10px, env(safe-area-inset-top));
+    left:0; right:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 50;
+    pointer-events:none;
+  }
+  header.top-bar h1{
+    margin:0;
+    font-family: 'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(13px, 3.6vw, 17px);
+    color: rgba(244, 236, 216, 0.55);
+    letter-spacing: 0.03em;
+    text-align:center;
+    padding: 0 50px;
+  }
+
+  #book-wrap{
+    position: relative;
+    width: min(92vw, 420px);
+    height: min(72vh, 620px);
+    height: min(72dvh, 620px);
+    perspective: 1800px;
+    perspective-origin: 50% 50%;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #book{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+
+  /* the closed-book spine shadow behind pages */
+  #book-shadow{
+    position:absolute;
+    left: -14px; right:-14px; top: 4%; bottom: 4%;
+    background: linear-gradient(180deg, var(--leaf-dark), #23301a);
+    border-radius: 4px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.65), 0 8px 20px rgba(0,0,0,0.5);
+    z-index: 0;
+  }
+
+  .page{
+    position:absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 0.85s cubic-bezier(.4,.1,.2,1);
+    will-change: transform;
+  }
+  .page.turning-fwd{ transform: rotateY(-178deg); }
+
+  .face{
+    position:absolute;
+    inset:0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 3px 6px 6px 3px;
+    overflow:hidden;
+    background: var(--paper);
+    box-shadow:
+      inset -10px 0 25px -18px rgba(0,0,0,0.35),
+      0 2px 10px rgba(0,0,0,0.3);
+  }
+  .face.back{ transform: rotateY(180deg); }
+
+  .face::before{ /* paper texture */
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(rgba(120,90,40,0.05) 1px, transparent 1px);
+    background-size: 3px 3px;
+    mix-blend-mode: multiply;
+    pointer-events:none;
+    opacity:.5;
+  }
+  .face::after{ /* inner curve shadow near spine */
+    content:"";
+    position:absolute; top:0; bottom:0; left:0; width:26px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.16), transparent);
+    pointer-events:none;
+  }
+
+  .content{
+    position:relative;
+    z-index:2;
+    height:100%;
+    padding: 34px 26px 30px 34px;
+    display:flex;
+    flex-direction:column;
+    color: var(--ink);
+  }
+
+  .page-number{
+    position:absolute;
+    bottom: 12px; right: 20px;
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ink-soft);
+    opacity:.6;
+    z-index:2;
+  }
+
+  .chapter-eyebrow{
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-style: italic;
+    font-size: clamp(11px, 2.6vw, 12px);
+    color: var(--tangerine-deep);
+    letter-spacing: 0.04em;
+    margin: 0 0 6px 0;
+  }
+
+  .body-text{
+    flex:1;
+    overflow: hidden;
+    font-size: clamp(14.5px, 3.7vw, 16.5px);
+    line-height: 1.62;
+    color: var(--ink);
+  }
+  .body-text p{
+    margin: 0 0 0.85em 0;
+    text-indent: 1.3em;
+  }
+  .body-text p:first-child{ margin-top:0; }
+
+  /* Cover */
+  .cover .content{
+    background:
+      radial-gradient(120% 90% at 30% 12%, rgba(224,168,74,0.10), transparent 55%),
+      linear-gradient(160deg, var(--cover-bg-1) 0%, var(--cover-bg-2) 100%);
+    color: var(--paper);
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 30px;
+    border: 1px solid var(--cover-border);
+  }
+  .cover .content::after{
+    content:"";
+    position:absolute; inset:10px;
+    border: 1px solid var(--cover-border);
+    pointer-events:none;
+  }
+  .cover .cover-title{ color: var(--cover-title); text-shadow: 0 2px 14px rgba(0,0,0,0.5); }
+  .cover .cover-sub{ color: var(--cover-sub); }
+  .cover-title{
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-weight:600;
+    font-size: clamp(26px, 7.2vw, 34px);
+    line-height:1.25;
+    color: #f1e3c0;
+    margin: 0 0 14px 0;
+  }
+  .cover-sub{
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(15px, 4vw, 18px);
+    color: var(--gold);
+    margin: 0;
+    letter-spacing: 0.03em;
+  }
+  .cover-motif{ margin: 22px 0; opacity:.9; }
+
+  /* Title page */
+  .titlepage .content{ align-items:center; justify-content:center; text-align:center; }
+  .titlepage .cover-title{ color: var(--ink); font-size: clamp(24px,6.4vw,30px); }
+  .titlepage .cover-sub{ color: var(--tangerine-deep); }
+  .titlepage .rule{ width:70px; height:1px; background: var(--gold); margin: 20px auto; opacity:.7; }
+  .titlepage .byline{
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+
+  /* Chapter divider */
+  .chapter .content{ align-items:center; justify-content:center; text-align:center; }
+  .chapter .cover-title{ color: var(--ink); font-size: clamp(21px,5.6vw,26px); }
+  .chapter .rule{ width:50px; height:1px; background: var(--gold); margin: 16px auto; opacity:.8; }
+
+  /* Ornamental divider */
+  .ornament .content{ align-items:center; justify-content:center; }
+
+  /* Pull-quote page */
+  .quote .content{ align-items:center; justify-content:center; text-align:center; }
+  .quote .body-text{ flex: none; }
+  .quote .body-text p{
+    text-indent:0;
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-style: italic;
+    font-size: clamp(19px, 5.6vw, 23px);
+    line-height:1.5;
+    color: var(--leaf-dark);
+  }
+
+  /* Back cover */
+  .backcover .content{
+    background: linear-gradient(160deg, var(--cover-bg-1) 0%, var(--cover-bg-2) 100%);
+    color: var(--paper);
+    align-items:center; justify-content:center; text-align:center;
+    border: 1px solid var(--cover-border);
+  }
+  .backcover .cover-title{ color: var(--cover-title); }
+  .backcover .cover-sub{ color: var(--cover-sub); }
+
+  svg.motif{ display:block; }
+
+  /* Nav */
+  #nav{
+    position:absolute;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left:0; right:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 26px;
+    z-index: 50;
+  }
+  .arrow-btn{
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    border: 1px solid rgba(185,138,62,0.55);
+    background: rgba(20,15,9,0.55);
+    backdrop-filter: blur(4px);
+    color: var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition: transform .15s ease, opacity .2s ease, background .2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .arrow-btn svg{ width:20px; height:20px; }
+  .arrow-btn:active{ transform: scale(0.9); background: rgba(185,138,62,0.25); }
+  .arrow-btn[disabled]{ opacity: 0.25; pointer-events:none; }
+  .arrow-btn:focus-visible{ outline: 2px solid var(--tangerine); outline-offset: 2px; }
+
+  #progress{
+    font-family:'Big Caslon', 'Book Antiqua', Palatino, Georgia, serif;
+    font-style: italic;
+    font-size: 13px;
+    color: rgba(244,236,216,0.6);
+    min-width: 64px;
+    text-align:center;
+  }
+
+  /* tap zones on the page itself for larger hit area (desktop hover hint) */
+  .tap-zone{
+    position:absolute; top:0; bottom:0; width:32%;
+    z-index: 40;
+    cursor: pointer;
+  }
+  .tap-zone.left{ left:0; }
+  .tap-zone.right{ right:0; }
+
+  @media (max-width: 380px){
+    #book-wrap{ height: min(68vh, 560px); height: min(68dvh, 560px); }
+    .content{ padding: 26px 18px 24px 26px; }
+  }
+
+  /* Celular em modo paisagem: prioriza altura, encolhe cabeçalho e navegação */
+  @media (max-height: 480px){
+    header.top-bar h1{ font-size: 12px; padding: 0 60px; }
+    #book-wrap{ height: min(80dvh, 78vh); width: min(46dvh, 320px); }
+    #nav{ gap: 18px; }
+    .arrow-btn{ width: 42px; height: 42px; }
+    .body-text{ font-size: clamp(13px, 3vh, 15px); }
+  }
+
+  /* Evita que o menu de contexto/seleção apareça durante o toque prolongado */
+  .page, .arrow-btn, .tap-zone{ -webkit-touch-callout: none; }
+
+  @media (prefers-reduced-motion: reduce){
+    .page{ transition-duration: 0.01ms !important; }
+  }
+
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <header class="top-bar"><h1>A verdadeira solitude de Isaquinho</h1></header>
+
+  <div id="book-wrap">
+    <div id="book-shadow"></div>
+    <div id="book"></div>
+
+    <div class="tap-zone left" id="zoneLeft" aria-hidden="true"></div>
+    <div class="tap-zone right" id="zoneRight" aria-hidden="true"></div>
+  </div>
+
+  <nav id="nav">
+    <button class="arrow-btn" id="prevBtn" aria-label="Página anterior">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <div id="progress">1 / 1</div>
+    <button class="arrow-btn" id="nextBtn" aria-label="Próxima página">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+  </nav>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Decorative motifs (inline SVG, no external assets) ----------
+  function leafBranch(color, size, accent){
+    size = size || 92;
+    accent = accent || '#c96a2e';
+    return '<svg class="motif" width="'+size+'" height="'+(size*0.6)+'" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">'+
+      '<path d="M5 60 C 30 40, 40 20, 60 8" stroke="'+color+'" stroke-width="2" fill="none" opacity="0.85"/>'+
+      '<ellipse cx="30" cy="45" rx="10" ry="5" fill="'+color+'" opacity="0.85" transform="rotate(-35 30 45)"/>'+
+      '<ellipse cx="45" cy="28" rx="10" ry="5" fill="'+color+'" opacity="0.85" transform="rotate(-40 45 28)"/>'+
+      '<circle cx="63" cy="8" r="9" fill="'+accent+'" opacity="0.95"/>'+
+      '<circle cx="80" cy="16" r="6.5" fill="'+accent+'" opacity="0.8"/>'+
+      '<ellipse cx="78" cy="30" rx="9" ry="4.5" fill="'+color+'" opacity="0.7" transform="rotate(30 78 30)"/>'+
+      '</svg>';
+  }
+  function smallDivider(color){
+    return '<svg class="motif" width="140" height="34" viewBox="0 0 140 34" xmlns="http://www.w3.org/2000/svg">'+
+      '<line x1="0" y1="17" x2="55" y2="17" stroke="'+color+'" stroke-width="1"/>'+
+      '<circle cx="70" cy="17" r="6" fill="#c96a2e" opacity="0.9"/>'+
+      '<line x1="85" y1="17" x2="140" y2="17" stroke="'+color+'" stroke-width="1"/>'+
+      '</svg>';
+  }
+
+  // ---------- Content model ----------
+  // type: cover | titlepage | chapter | text | quote | ornament | backcover
+  var pages = [
+    { type:'cover' },
+    { type:'titlepage' },
+    { type:'chapter', title:'Um Simples\nPé de Tangerina' },
+
+    { type:'text', eyebrow:'Um simples pé de tangerina', paras:[
+      "Um belo dia — jeito estranho de começar um livro novo. Mas este livro é diferente dos demais, pois é a história de amor mais sofisticada que existe: sempre repleta de sentimentos e de fortes emoções.",
+      "No início, uma árvore era apenas uma semente. Não sei explicar por quê, mas sempre me identifiquei com tudo que envolve a natureza. Não há nada melhor do que ver o mato verde, as rosas coloridas, uma bela paisagem.",
+      "Antes de existir a árvore, havia apenas um grão enterrado na terra. Mas não foi só o esforço da semente: foi a ajuda de tudo ao redor que fez surgir as belas flores de tangerina. Tudo tão perfeito e harmônico — o solo trabalha com as raízes para sustentar o caule, o caule sustenta os frutos através dos galhos, e o sol trabalha junto para manter a tangerina viva."
+    ]},
+    { type:'text', paras:[
+      "A melhor sensação é saber que podemos contar com quem está ao nosso redor.",
+      "Na Bíblia se destaca a força da palavra amor, pois esse é o verdadeiro motivo para continuarmos todos os dias — não apenas falando de Jesus, mas pensando nesta pergunta: você trocaria sua vida por alguém que ama?",
+      "Se sim, pense no porquê. É simples: o amor é a parte mais importante do ser humano, seja por uma pessoa, um animal, ou até mesmo um pé de tangerina."
+    ]},
+    { type:'text', paras:[
+      "Lembro das ações que marcaram minha vida. A primeira vez que senti uma raiva incontrolável foi quando presenciei uma das cenas mais traumáticas que já vivi.",
+      "Era um sábado normal. Eu jogava, tudo tão quieto — apenas eu e minha solidão — até minha irmã chegar chorando. Tirei o fone de ouvido e perguntei o que havia acontecido. Ela mal conseguia falar, de tão traumatizada estava.",
+      "Foi então que ouvi o barulho: meu ex-padrasto, alcoolizado, quebrando o portão; minha mãe, chorando. Eu não sabia o que fazer — nunca tinha vivido uma cena assim."
+    ]},
+    { type:'text', paras:[
+      "Assim que ele entrou, comecei a empurrá-lo contra o portão, para que ninguém se machucasse. Em certo momento, meu padrasto atual saiu de casa e entrou em briga com o outro. Tentei separar os dois.",
+      "Em dois minutos, minha calçada estava cheia de parentes e da polícia. Enquanto os afastava, fui prensado contra o portão e levei um corte profundo na coxa. Mas, por ter bastante força, consegui empurrar os dois.",
+      "Foi nessa hora que um cachorro de rua, que eu costumava alimentar, veio me defender — e o ex-padrasto chutou o animal. Foi exatamente ali que nasceu em mim um sentimento novo, cheio de amargura e ódio. Uma emoção forte demais para eu conter."
+    ]},
+    { type:'text', paras:[
+      "Se não fosse o amor, eu não teria parado naquele momento. Se não fosse a bondade que carreguei desde criança, eu não teria me segurado.",
+      "E este é o ponto: será que um galho esquece, um dia, que já foi semente?",
+    ], quoteEnd:"A verdadeira árvore está na semente." },
+    { type:'text', paras:[
+      "Certa vez abri a Bíblia e me deparei com esta frase:",
+    ], inlineQuote:"“Há tempo para todo propósito debaixo do céu. Tempo de nascer, e tempo de morrer; tempo de plantar, e tempo de arrancar o que se plantou.”",
+      after:[
+      "Foi nesse momento que parei para analisar tudo o que eu já tinha feito — coisas boas e ruins, afinal ninguém é perfeito. Mas quem tem bom coração detesta fazer mal a outra pessoa."
+    ]},
+    { type:'text', paras:[
+      "Talvez os verdadeiramente puros apenas caiam em tentação por obra do momento. Sempre ouvi, desde pequeno: “Ame seus inimigos assim como você se ama.” Sempre coloquei isso em prática, pois não seria eu, de bom coração, se odiasse alguém.",
+      "Você conhece a sensação de fazer um bem maior por alguém? Imagine se você fosse um pé de tangerina, deixando várias pessoas felizes só por provarem do seu fruto."
+    ]},
+    { type:'text', paras:[
+      "Sempre gostei da sensação de ouvir que eu era um garoto de ouro, um menino de bom coração. Isso me fazia sentir realizado por algo que eu sabia que tinha feito de verdade.",
+      "A Bíblia traz uma frase que eu temia desde que era uma simples semente, em 1 Coríntios:"
+    ], inlineQuote:"“Quando eu era menino, falava como menino, pensava como menino e raciocinava como menino. Quando me tornei homem, deixei para trás as coisas de menino.”"},
+    { type:'text', paras:[
+      "Meu medo era deixar de alegrar as pessoas só por estar adulto. Sempre pensei: “Tem que aproveitar a vida antes de partir.” Afinal, o que seria aproveitar a vida para você? Imagine que você tem apenas algumas horas debaixo do céu.",
+      "Para mim, gostaria de dar vida a tudo que eu tocar e por onde passar. Se no meu último instante eu conseguir deixar uma pessoa feliz, terei aproveitado meu tempo — assim como antes eu conseguia olhar para uma pequena árvore de tangerina."
+    ]},
+    { type:'text', paras:[
+      "Sempre fui um grande observador. Gosto de ver casais que ainda carregam a paixão um pelo outro, famílias reunidas em um parque.",
+      "A todo momento observo as pessoas, e na maior parte das vezes noto que parecem apressadas, esquecidas de como é viver de verdade. Muitos vão para o trabalho, mas no caminho o único pensamento é que as horas passem rápido para poderem voltar para casa — esquecem de viver aquele momento."
+    ]},
+    { type:'text', paras:[
+      "Às vezes, aquela pessoa a quem você deixou de dar um bom dia poderia ter se tornado sua melhor amiga. Ou aquele senhor que você vê todos os dias poderia ajudá-lo nos piores momentos. Muitas vezes deixamos a melhor fruta passar diante dos nossos olhos.",
+      "Em certo momento da minha vida, eu não conseguia me comunicar com as pessoas — isso me deixava isolado da sociedade. Acabei fazendo amizades que me levaram por caminhos ruins, mas foi por causa delas que me tornei mais forte."
+    ]},
+    { type:'text', paras:[
+      "É o verdadeiro significado da frase: “A amizade ruim leva ao mau caminho.” Na maioria das vezes, quem tem bom coração e faz coisas ruins por causa de amizades não é porque deseja isso — mas foi ali que encontrou convívio, interação, alguém que trouxesse um sorriso.",
+      "Se você colocar uma tangerina podre encostada na melhor tangerina do mundo, a boa acabará apodrecendo também — mas nunca vai abandonar a ruim."
+    ]},
+    { type:'quote', text:"Muitas vezes, os de bom coração enxergam a melhor fruta dentro de uma casca escura." },
+
+    { type:'ornament' },
+
+    { type:'text', paras:[
+      "Há quem cresça sozinho, como um pé de tangerina plantado no canto esquecido do quintal.",
+      "Ninguém o regou por afeto — foi a chuva que se compadeceu, foi o acaso que se demorou ali. E, ainda assim, ele cresceu. Deu sombra. Deu fruto. Deu doçura a quem nunca perguntou o preço de tanto dar."
+    ]},
+    { type:'text', paras:[
+      "Porque existem pessoas assim: pés de tangerina em forma de gente. Enraizadas onde a vida as deixou, aprendendo a florescer sem que ninguém tenha ensinado como.",
+      "E, quando alguém se aproxima, cansado, carregando o próprio inverno, é debaixo dessa sombra que se abriga. É dessa doçura que se alimenta."
+    ]},
+    { type:'text', paras:[
+      "Mas um pé de tangerina nunca anda. Fica. Vê muita gente passar, colher o que tem para dar, e seguir.",
+      "E ele, ali, só ele sabe o que custa florescer sozinho, ano após ano, sem que ninguém pergunte se também precisa de chuva. Foi assim que aprendi a doçura de alguns — e o silêncio que ela esconde."
+    ]},
+    { type:'text', paras:[
+      "Há um verso antigo que atravessa os séculos como raiz que não se vê:"
+    ], inlineQuote:"“Melhor é serem dois do que um, porque, se um cair, o outro levanta o seu companheiro; mas ai do que estiver só, pois, caindo, não haverá outro que o levante.”"},
+    { type:'text', paras:[
+      "Um pé de tangerina, quando cai, cai sozinho. Ninguém segura o tronco. Ninguém apara a queda. E, ainda assim, antes de cair, ele deu — deu sombra, deu fruto, deu tudo o que tinha, sem guardar nada para si.",
+    ], quoteEnd:"Se eu cair, quem vai me levantar?"},
+    { type:'text', paras:[
+      "Tenho gente boa ao redor — isso o tempo não apaga. Mas aprendi a florescer como se florescesse sozinho, porque descobri, cedo demais, que as mãos ao meu redor quase sempre estão ocupadas colhendo outras tangerinas, cuidando de outras quedas, salvando outras vidas que não a minha.",
+      "Talvez seja esse o retrato mais silencioso de quem ampara os outros: ser pé de tangerina para o mundo inteiro, e nunca, nem por um instante, ter alguém que pare para regar de volta."
+    ]},
+    { type:'text', paras:[
+      "Triste é aquele de poucos amigos. Ao longo da vida, quase todos já ouviram a frase: “Não existem amigos, apenas colegas.” Ainda assim, há uma tristeza maior do que essa desconfiança: viver sem amizades verdadeiras, sem alguém que ofereça consolo nos dias de sofrimento.",
+      "É desse silêncio que nasce um vazio permanente no peito."
+    ]},
+    { type:'text', paras:[
+      "Miserável é o homem que não encontra com quem dividir suas dores, pois quem carrega uma pedra sozinho se cansa muito mais depressa do que aquele que encontra alguém disposto a ajudá-lo a sustentá-la.",
+      "A solidão, por vezes, pode ser um refúgio. Estar sozinho também pode ser bom; há momentos em que a própria companhia traz paz e fortalece a alma."
+    ]},
+    { type:'text', paras:[
+      "Contudo, triste é aquele que atravessa a vida inteira sem o calor da presença de alguém — sem um abraço, uma conversa, um ombro onde repousar o peso do coração.",
+    ], quoteEnd:"Solitário é o homem cujo único companheiro é a própria companhia."},
+
+    { type:'ornament' },
+    { type:'chapter', title:'Afinal, o\nque é o amor?' },
+
+    { type:'text', paras:[
+      "Já imaginou uma vida sem sentido? Uma existência sem desafios, sem motivos para continuar, sem nada que desperte o desejo de viver mais um dia? Talvez essa seja a melhor imagem de uma vida sem amor.",
+      "O amor é o que dá direção aos nossos passos. É a força silenciosa que nos motiva a continuar, mesmo quando tudo parece pesado."
+    ]},
+    { type:'text', paras:[
+      "E não falo apenas do amor entre um casal, ou de um relacionamento — falo do amor como o alicerce de todas as coisas. É o amor que nos faz querer ver alguém mais uma vez, proteger quem amamos, alcançar um sonho, cuidar daquilo que nos foi confiado e encontrar esperança no futuro.",
+      "Na filosofia, o amor assume muitas formas: o amor por si mesmo, o amor ao próximo, o amor pela família, pelo companheiro, pela amizade, e até pelo conhecimento."
+    ]},
+    { type:'text', paras:[
+      "Mas que felicidade existe debaixo do céu para quem não ama absolutamente nada?",
+      "Ame a natureza. Ame os animais. Ame o céu com suas nuvens e o calor do sol. Ame a lua, as estrelas e o silêncio da noite. Ame as pequenas coisas que tornam a vida extraordinária — porque é nelas que, muitas vezes, encontramos a presença mais simples e mais verdadeira do amor."
+    ]},
+    { type:'text', paras:[
+      "O amor não é um bem material. Não pode ser comprado, pesado ou medido. Sendo um sentimento, sua essência é imaterial — e é justamente nessa dimensão invisível que nasce a felicidade mais profunda.",
+    ], quoteEnd:"Feliz é o homem que ama sem esperar nada em troca, pois há pureza na alma daquele que ama por amor, e não por recompensa."},
+
+    { type:'backcover' }
+  ];
+
+  var total = pages.length;
+
+  // ---------- Render page faces ----------
+  var bookEl = document.getElementById('book');
+
+  function renderInner(p){
+    if(p.type === 'cover'){
+      return '<div class="content cover">'+
+        '<div class="cover-motif">'+leafBranch('#6c8a55', 110, '#e07a34')+'</div>'+
+        '<h2 class="cover-title">A verdadeira<br>solitude de<br>Isaquinho</h2>'+
+        '<p class="cover-sub">Eu e Deus</p>'+
+        '</div>';
+    }
+    if(p.type === 'titlepage'){
+      return '<div class="content titlepage">'+
+        '<h2 class="cover-title">A verdadeira solitude<br>de Isaquinho</h2>'+
+        '<div class="rule"></div>'+
+        '<p class="cover-sub">Eu e Deus</p>'+
+        '<p class="byline">um livro sobre raízes, solidão e amor</p>'+
+        '</div>';
+    }
+    if(p.type === 'chapter'){
+      return '<div class="content chapter">'+
+        leafBranch('#4b5e3a', 84)+
+        '<h2 class="cover-title" style="margin-top:16px;">'+p.title.replace('\n','<br>')+'</h2>'+
+        '<div class="rule"></div>'+
+        '</div>';
+    }
+    if(p.type === 'ornament'){
+      return '<div class="content ornament">'+leafBranch('#4b5e3a', 100)+'</div>';
+    }
+    if(p.type === 'quote'){
+      return '<div class="content quote"><div class="body-text"><p>“'+p.text+'”</p></div></div>';
+    }
+    if(p.type === 'backcover'){
+      return '<div class="content backcover">'+
+        leafBranch('#6c8a55', 90, '#e07a34')+
+        '<h2 class="cover-title" style="margin-top:14px;">Fim</h2>'+
+        '<p class="cover-sub">— por Isaquinho —</p>'+
+        '</div>';
+    }
+    // text page
+    var html = '<div class="content">';
+    if(p.eyebrow){ html += '<p class="chapter-eyebrow">'+p.eyebrow+'</p>'; }
+    html += '<div class="body-text">';
+    (p.paras||[]).forEach(function(par){ html += '<p>'+par+'</p>'; });
+    if(p.inlineQuote){
+      html += '<p style="text-indent:0;font-style:italic;color:var(--leaf-dark);border-left:2px solid var(--gold);padding-left:12px;margin:0.9em 0;">'+p.inlineQuote+'</p>';
+    }
+    (p.after||[]).forEach(function(par){ html += '<p>'+par+'</p>'; });
+    if(p.quoteEnd){
+      html += '<p style="text-indent:0;font-style:italic;color:var(--tangerine-deep);text-align:center;margin-top:1em;">'+p.quoteEnd+'</p>';
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  pages.forEach(function(p, i){
+    var pageEl = document.createElement('div');
+    pageEl.className = 'page';
+    pageEl.dataset.index = i;
+
+    var front = document.createElement('div');
+    front.className = 'face front';
+    front.innerHTML = renderInner(p) + (p.type==='text' ? '<span class="page-number">'+(i+1)+'</span>' : '');
+
+    var back = document.createElement('div');
+    back.className = 'face back';
+    // back shows a subtle blank paper face (of the leaf being turned)
+    back.innerHTML = '<div class="content" style="align-items:center;justify-content:center;">'+leafBranch('#cbb98a', 60)+'</div>';
+
+    pageEl.appendChild(front);
+    pageEl.appendChild(back);
+    bookEl.appendChild(pageEl);
+  });
+
+  var pageEls = Array.prototype.slice.call(bookEl.children);
+
+  // ---------- State ----------
+  var current = 0; // index of the top-most, unflipped page
+  try{
+    var saved = localStorage.getItem('isaquinho-book-page');
+    if(saved !== null){
+      var n = parseInt(saved, 10);
+      if(!isNaN(n) && n >= 0 && n < total) current = n;
+    }
+  }catch(e){}
+
+  function layout(){
+    pageEls.forEach(function(el, i){
+      if(i < current){
+        el.classList.add('turning-fwd');
+        el.style.zIndex = i;
+      } else {
+        el.classList.remove('turning-fwd');
+        el.style.zIndex = total - i;
+      }
+    });
+    document.getElementById('progress').textContent = (current+1)+' / '+total;
+    document.getElementById('prevBtn').disabled = current <= 0;
+    document.getElementById('nextBtn').disabled = current >= total - 1;
+    try{ localStorage.setItem('isaquinho-book-page', String(current)); }catch(e){}
+  }
+
+  var animating = false;
+  function goNext(){
+    if(animating || current >= total - 1) return;
+    animating = true;
+    current += 1;
+    layout();
+    setTimeout(function(){ animating = false; }, 700);
+  }
+  function goPrev(){
+    if(animating || current <= 0) return;
+    animating = true;
+    current -= 1;
+    layout();
+    setTimeout(function(){ animating = false; }, 700);
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', goNext);
+  document.getElementById('prevBtn').addEventListener('click', goPrev);
+  document.getElementById('zoneRight').addEventListener('click', goNext);
+  document.getElementById('zoneLeft').addEventListener('click', goPrev);
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight') goNext();
+    if(e.key === 'ArrowLeft') goPrev();
+  });
+
+  // swipe support
+  var touchStartX = null;
+  var wrap = document.getElementById('book-wrap');
+  wrap.addEventListener('touchstart', function(e){
+    touchStartX = e.changedTouches[0].clientX;
+  }, {passive:true});
+  wrap.addEventListener('touchend', function(e){
+    if(touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 40){
+      if(dx < 0) goNext(); else goPrev();
+    }
+    touchStartX = null;
+  }, {passive:true});
+
+  layout();
+})();
+</script>
+</body>
+</html>
